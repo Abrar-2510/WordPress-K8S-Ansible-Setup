@@ -41,6 +41,7 @@ The playbook assumes you are deploying on a Linux server (e.g., Amazon Linux 2, 
 - **Port 22 (SSH)**
 - **Port 80 (HTTP)**
 - **Port 8081 (phpMyAdmin)**
+- **Port 8081 (wordpress)**
 
 You must be able to connect to the server via SSH.
 
