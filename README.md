@@ -57,12 +57,9 @@ Add your private key path for SSH in the `ansible.cfg` file.
 git clone https://github.com/your-repo/wordpress-docker-ansible.git
 cd wordpress-docker-ansible
 ```
-### 2. Install Python Dependencies:
-Create a virtual environment (optional but recommended) and install the required dependencies:
+### 2. Install requirements.txt:
 
 ```bash
-python -m venv venv
-source venv/bin/activate
 pip install -r requirements.txt
 ```
 ### 3. Configure `ansible.cfg` File:
