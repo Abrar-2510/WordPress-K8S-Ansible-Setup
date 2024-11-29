@@ -16,7 +16,7 @@ wordpress-docker-ansible/
 │   │   ├── tasks/        
 │   │   │   └── main.yml  # Main tasks for Docker and Docker Compose setup
 │   │   ├── templates/    
-│   │   │   └── docker-compose.yml.j2  # Docker Compose template for WordPress and MySQL
+│   │   │   └── docker-compose.yml.j2  # Docker Compose template for WordPress, MySQL, and phpMyAdmin
 │   │   └── defaults/     
 │   │       └── main.yml  # Default variables for Docker host setup
 
@@ -40,6 +40,7 @@ The playbook assumes you are deploying on a Linux server (e.g., Amazon Linux 2, 
 
 - **Port 22 (SSH)**
 - **Port 80 (HTTP)**
+- **Port 8081 (phpMyAdmin)**
 
 You must be able to connect to the server via SSH.
 
@@ -85,12 +86,19 @@ ansible-playbook playbook.yml
 ## How it Works
 
 ### Docker Host Role:
-The `docker-host` role installs Docker and Docker Compose on the target host. It then sets up the required Docker Compose file for running WordPress and MySQL containers.
+The `docker-host` role installs Docker and Docker Compose on the target host. It then sets up the required Docker Compose file for running WordPress, MySQL, and phpMyAdmin containers.
 
--configures and starts a MySQL container using the official MySQL 5.7 Docker image. It uses environment variables to set up the root password, database, and user credentials.
+- MySQL Container (db):
+Configures the MySQL container using environment variables for the database name, user, password, and root password.
+Data is persisted using the db_data volume.
 
--sets up the WordPress container, connects it to the MySQL container, and ensures that WordPress is able to connect to the MySQL database.
+- WordPress Container (wordpress):
+Links to the MySQL container and uses the WORDPRESS_DB_HOST, WORDPRESS_DB_USER, and WORDPRESS_DB_PASSWORD environment variables.
+Exposes the WordPress site on port 8000 of the host machine.
 
+- phpMyAdmin Container (phpmyadmin):
+Connects to the MySQL container using the PMA_HOST and MYSQL_ROOT_PASSWORD environment variables.
+Accessible on port 8081 of the host machine for database management.
 ---
 
 ## Variables
@@ -109,7 +117,8 @@ mysql_password: wordpresspassword        # MySQL password for WordPress user
 Once the playbook completes successfully, you can access WordPress by navigating to:
 
 ```bash
-http://<your-server-ip>
+WordPress: http://<your-server-ip>:8000
+phpMyAdmin: http://<your-server-ip>:8081
 ```
 
 ## Troubleshooting
