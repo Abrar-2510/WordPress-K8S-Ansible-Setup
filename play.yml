@@ -1,0 +1,7 @@
+- name: Deploy WordPress with MySQL on AWS EC2
+  hosts: wordpress_host
+  become: true
+  roles:
+    - Docker-host
+    
+    

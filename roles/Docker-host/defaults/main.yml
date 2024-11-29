@@ -1,0 +1,7 @@
+---
+# defaults file for wordpress
+wordpress_version: "latest"
+mysql_database: "wordpress"
+mysql_user: "wp_user"
+mysql_password: "123"
+mysql_root_password: "123"

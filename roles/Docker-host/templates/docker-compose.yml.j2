@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:5.7
+    container_name: wordpress_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: {{ mysql_database }}
+      MYSQL_USER: {{ mysql_user }}
+      MYSQL_PASSWORD: {{ mysql_password }}
+      MYSQL_ROOT_PASSWORD: {{ mysql_root_password }}
+    volumes:
+      - db_data:/var/lib/mysql
+
+  wordpress:
+    image: wordpress:{{ wordpress_version }}
+    container_name: wordpress_app
+    restart: always
+    ports:
+      - "8000:80"  # Expose port 80 in the container to port 8000 on the host
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: {{ mysql_user }}
+      WORDPRESS_DB_PASSWORD: {{ mysql_password }}
+      WORDPRESS_DB_NAME: {{ mysql_database }}
+    volumes:
+      - wordpress:/var/www/html
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"  # Expose port 80 of phpMyAdmin container to 8081 on the host
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: {{ mysql_root_password }}
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+  wordpress:
