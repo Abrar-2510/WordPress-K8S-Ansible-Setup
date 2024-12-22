@@ -71,58 +71,7 @@ ansible-playbook playbook.yml
 
 ## Project Structure
 
-+-----------------------------------------------+
-|               AWS Infrastructure              |
-|   +-----------------+    +------------------+ |
-|   | EC2 Instance 1  |    | EC2 Instance 2   | |   
-|   | (K8s Master)    |    | (K8s Worker)     | |  
-|   +-----------------+    +------------------+ |  
-|        |                                       |
-|        |                                       |
-|        v                                       |
-|   +------------------+    +-----------------+ |
-|   | Kubernetes Master |    | Kubernetes Node | |
-|   | (API Server)      |    | (Worker Node)   | |
-|   +------------------+    +-----------------+ |
-+-----------------------------------------------+
-        |
-        v
-+-----------------------------------------------+
-|               Kubernetes Cluster              |
-|   +------------------+   +------------------+ |
-|   | WordPress Pod    |   | MySQL Pod        | |
-|   +------------------+   +------------------+ |
-|        |                           |           |
-|        v                           v           |
-|   +-----------------+    +-----------------+   |
-|   | WordPress Service|    | MySQL Service    |  |
-|   +-----------------+    +-----------------+   |
-+-----------------------------------------------+
-        |
-        v
-+-----------------------------------------------+
-|                External Traffic              |
-|   +--------------------------+               |
-|   |  Load Balancer (Optional) |               |
-|   +--------------------------+               |
-|        |                                      |
-|        v                                      |
-|    External Access to WordPress App         |
-+-----------------------------------------------+
-
-
-
-## Variables
-
-### MySQL Variables (`roles/k8s-cluster/defaults/main.yml`)
-You can modify the following variables for MySQL:
-
-```yaml
-mysql_root_password: rootpassword        # Set the MySQL root password
-mysql_database: wordpress                # The database name for WordPress
-mysql_user: wordpress                    # MySQL user for WordPress
-mysql_password: wordpresspassword        # MySQL password for WordPress user
-```
+![Kubernetes Architecture](diagrams/k8s_architecture.drawio.png)
 
 ## Access the Application
 After the playbook completes successfully, you can access the deployed services using the following URLs:
