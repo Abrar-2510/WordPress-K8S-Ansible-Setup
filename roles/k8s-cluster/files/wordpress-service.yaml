@@ -1,0 +1,12 @@
+apiVersion: v1             # API version (specific to services)
+kind: Service              # Type of Kubernetes object
+metadata:
+  name: wordpress          # Name of the Service
+spec:
+  selector:                # Targets Pods matching these labels
+    app: wordpress
+  ports:                   # Ports to expose
+  - protocol: TCP          # Protocol used (usually TCP for web apps)
+    port: 80               # External port (accessible outside Kubernetes)
+    targetPort: 80         # Port on the Pod the traffic is directed to
+  type: LoadBalancer       # Makes the Service accessible via an external IP

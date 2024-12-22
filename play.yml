@@ -1,7 +1,41 @@
-- name: Deploy WordPress with MySQL on AWS EC2
-  hosts: wordpress_host
-  become: true
-  roles:
-    - Docker-host
-    
-    
+---
+- name: Deploy WordPress on Kubernetes
+  hosts: k8s_nodes
+  become: yes
+  tasks:
+    # Apply the Deployment manifest
+    - name: Apply WordPress Deployment
+      command: kubectl apply -f ./wordpress-deployment.yaml
+      register: deploy_output
+
+    # Apply the Service manifest
+    - name: Apply WordPress Service
+      command: kubectl apply -f ./wordpress-service.yaml
+      register: service_output
+
+    # Display the output of Deployment and Service application
+    - name: Display Deployment application output
+      debug:
+        var: deploy_output.stdout
+
+    - name: Display Service application output
+      debug:
+        var: service_output.stdout
+
+    # Get the status of Pods
+    - name: Get Pods Status
+      command: kubectl get pods
+      register: pods_status
+
+    - name: Display Pods Status
+      debug:
+        var: pods_status.stdout
+
+    # Get the status of Services
+    - name: Get Services Status
+      command: kubectl get svc
+      register: svc_status
+
+    - name: Display Services Status
+      debug:
+        var: svc_status.stdout

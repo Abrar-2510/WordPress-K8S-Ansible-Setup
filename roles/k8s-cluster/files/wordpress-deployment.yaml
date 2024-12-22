@@ -1,0 +1,34 @@
+apiVersion: apps/v1        # API version (specific to deployments)
+kind: Deployment           # Type of Kubernetes object
+metadata:
+  name: wordpress          # Name of the Deployment
+  labels:                  # Key-value pairs to identify this Deployment
+    app: wordpress
+spec:
+  replicas: 1              # Number of Pods to run
+  selector:                # Define which Pods this Deployment controls
+    matchLabels:
+      app: wordpress
+  template:                # Template to define Pods created by this Deployment
+    metadata:
+      labels:
+        app: wordpress
+    spec:
+      containers:
+      - name: wordpress    # Name of the container
+        image: wordpress:latest # Docker image for WordPress
+        ports:
+        - containerPort: 80 # Port exposed inside the container
+        env:                # Environment variables for the container
+        - name: WORDPRESS_DB_HOST
+          value: mysql
+        - name: WORDPRESS_DB_USER
+          valueFrom:
+            secretKeyRef:   # Pulls the username from a Kubernetes secret
+              name: mysql-secret
+              key: username
+        - name: WORDPRESS_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:   # Pulls the password from a Kubernetes secret
+              name: mysql-secret
+              key: password

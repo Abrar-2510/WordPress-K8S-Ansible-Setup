@@ -1,54 +1,6 @@
-# WordPress Docker Ansible Setup
+# Kubernetes Cluster with WordPress and MySQL
 
-## Overview
-
-This project automates the deployment of a **WordPress** website with a **MySQL** database using **Ansible** and **Docker**. The setup is portable and can be used across various environments (e.g., AWS, local servers, or any cloud platform). This solution includes setting up Docker, Docker Compose, WordPress, and MySQL as containers.
-
----
-
-```
-wordpress-docker-ansible/
-├── ansible.cfg          # Ansible configuration file
-├── inventory.ini        # Hosts inventory file
-├── playbook.yml         # Main playbook to execute
-├── roles/
-│   ├── docker-host/     
-│   │   ├── tasks/        
-│   │   │   └── main.yml  # Main tasks for Docker and Docker Compose setup
-│   │   ├── templates/    
-│   │   │   └── docker-compose.yml.j2  # Docker Compose template for WordPress, MySQL, and phpMyAdmin
-│   │   └── defaults/     
-│   │       └── main.yml  # Default variables for Docker host setup
-
-```
-
-## Prerequisites
-
-### 1. **Ansible**
-Ensure that **Ansible** is installed on your local machine:
-
-```bash
-sudo apt update && sudo apt install ansible -y
-```
-
-
-### 1. **Docker & Docker Compose on Target Host**
-This playbook installs Docker and Docker Compose if they are not already present on the target server.
-
-### 2. **AWS EC2 Instance (or any other Linux server)**
-The playbook assumes you are deploying on a Linux server (e.g., Amazon Linux 2, Ubuntu). Ensure that the security group of your instance allows:
-
-- **Port 22 (SSH)**
-- **Port 80 (HTTP)**
-- **Port 8081 (phpMyAdmin)**
-- **Port 8081 (wordpress)**
-
-You must be able to connect to the server via SSH.
-
-### 3. **SSH Key Configuration**
-Add your private key path for SSH in the `ansible.cfg` file.
-
----
+This project automates the setup of a Kubernetes cluster on AWS EC2 instances using Ansible. It also deploys WordPress and MySQL applications on the Kubernetes cluster.
 
 ## Setup Instructions
 
@@ -75,33 +27,94 @@ private_key_file = ~/.ssh/my-aws-key.pem  # Update with your key file path
 ```
 
 ### Run the Playbook:
-Execute the playbook to deploy WordPress and MySQL with Docker:
+Execute the playbook to deploy WordPress and MySQL with k8s:
 
 ```bash
 ansible-playbook playbook.yml
 ```
 
-## How it Works
+## structure
+```
+├── ansible/
+│   ├── inventory.ini                # Ansible inventory file
+│   ├── ansible.cfg                  # Ansible configuration file
+│   ├── play.yml                 # Main Ansible playbook
+│   ├── roles/
+│   │   ├── k8s-cluster/
+│   │   │   ├── tasks/
+│   │   │   │   ├── main.yml         # Tasks to install Kubernetes, Docker, configure nodes
+│   │   │   │   └── setup.yml        # Optional: Additional setup tasks for Kubernetes nodes
+│   │   │   ├── files/
+│   │   │   │   ├── wordpress-deployment.yaml  # Kubernetes manifest for WordPress Deployment
+│   │   │   │   ├── wordpress-service.yaml     # Kubernetes manifest for WordPress Service
+│   │   │   │   └── mysql-deployment.yaml      # Kubernetes manifest for MySQL Deployment
+├── scripts/
+│   ├── init-k8s-cluster.sh          # Script for initializing the Kubernetes cluster
+│   └── deploy-k8s-app.sh            # Script for deploying applications to Kubernetes
+│
+└── README.md                        # Documentation for the project setup and usage
+```
 
-### Docker Host Role:
-The `docker-host` role installs Docker and Docker Compose on the target host. It then sets up the required Docker Compose file for running WordPress, MySQL, and phpMyAdmin containers.
+## Prerequisites
 
-- MySQL Container (db):
-Configures the MySQL container using environment variables for the database name, user, password, and root password.
-Data is persisted using the db_data volume.
+- Ansible installed on your local machine.
+- AWS EC2 instances running Ubuntu (or another supported distribution).
+- Kubernetes components (`kubeadm`, `kubelet`, `kubectl`) installed on the nodes.
+- SSH access to the EC2 instances with appropriate key pairs.
+-  Ensure that the security group of your instance allows:
 
-- WordPress Container (wordpress):
-Links to the MySQL container and uses the WORDPRESS_DB_HOST, WORDPRESS_DB_USER, and WORDPRESS_DB_PASSWORD environment variables.
-Exposes the WordPress site on port 8000 of the host machine.
+- **Port 6443: Kubernetes API server**
+- **Port 2379-2380: etcd**
+- **Port 10250: Kubelet**
+- **Ports 30000-32767: NodePort Services**
 
-- phpMyAdmin Container (phpmyadmin):
-Connects to the MySQL container using the PMA_HOST and MYSQL_ROOT_PASSWORD environment variables.
-Accessible on port 8081 of the host machine for database management.
----
+
+## Project Structure
+
++-----------------------------------------------+
+|               AWS Infrastructure              |
+|   +-----------------+    +------------------+ |
+|   | EC2 Instance 1  |    | EC2 Instance 2   | |   
+|   | (K8s Master)    |    | (K8s Worker)     | |  
+|   +-----------------+    +------------------+ |  
+|        |                                       |
+|        |                                       |
+|        v                                       |
+|   +------------------+    +-----------------+ |
+|   | Kubernetes Master |    | Kubernetes Node | |
+|   | (API Server)      |    | (Worker Node)   | |
+|   +------------------+    +-----------------+ |
++-----------------------------------------------+
+        |
+        v
++-----------------------------------------------+
+|               Kubernetes Cluster              |
+|   +------------------+   +------------------+ |
+|   | WordPress Pod    |   | MySQL Pod        | |
+|   +------------------+   +------------------+ |
+|        |                           |           |
+|        v                           v           |
+|   +-----------------+    +-----------------+   |
+|   | WordPress Service|    | MySQL Service    |  |
+|   +-----------------+    +-----------------+   |
++-----------------------------------------------+
+        |
+        v
++-----------------------------------------------+
+|                External Traffic              |
+|   +--------------------------+               |
+|   |  Load Balancer (Optional) |               |
+|   +--------------------------+               |
+|        |                                      |
+|        v                                      |
+|    External Access to WordPress App         |
++-----------------------------------------------+
+
+
 
 ## Variables
 
-### MySQL Variables (`roles/Docker-host/defaults/main.yml`)
+### MySQL Variables (`roles/k8s-cluster/defaults/main.yml`)
 You can modify the following variables for MySQL:
 
 ```yaml
@@ -111,21 +124,38 @@ mysql_user: wordpress                    # MySQL user for WordPress
 mysql_password: wordpresspassword        # MySQL password for WordPress user
 ```
 
-## Access WordPress
-Once the playbook completes successfully, you can access WordPress by navigating to:
+## Access the Application
+After the playbook completes successfully, you can access the deployed services using the following URLs:
 
 ```bash
-WordPress: http://<your-server-ip>:8000
-phpMyAdmin: http://<your-server-ip>:8081
+WordPress: http://<EXTERNAL-IP> 
+(which will be appeared automaticle after provisioning ansible you dont need to run ``` kubectl get svc
+ ``` )
 ```
 
-## Troubleshooting
 
-- **Docker Not Running:** Make sure Docker is installed and running by checking with `docker --version` or `docker ps`.
 
-- **Permission Errors:** Ensure that your user has the necessary permissions to use Docker. You might need to add your user to the `docker` group:
 
-  ```bash
-  sudo usermod -aG docker $USER ```
 
-- **MySQL Connection Issues:**  If WordPress cannot connect to MySQL, verify that the MySQL container is running and properly linked.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

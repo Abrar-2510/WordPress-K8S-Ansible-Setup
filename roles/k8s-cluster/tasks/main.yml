@@ -1,0 +1,61 @@
+# roles/k8s-cluster/tasks/main.yml
+- name: Update apt packages
+  apt:
+    update_cache: yes
+    upgrade: yes
+  when: ansible_facts['distribution'] == 'Ubuntu'
+
+- name: Install Docker
+  apt:
+    name: docker.io
+    state: present
+  when: ansible_facts['distribution'] == 'Ubuntu'
+
+- name: Add Kubernetes repository
+  apt_repository:
+    repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+    state: present
+  when: ansible_facts['distribution'] == 'Ubuntu'
+
+- name: Install Kubernetes components (kubeadm, kubelet, kubectl)
+  apt:
+    name:
+      - kubeadm
+      - kubelet
+      - kubectl
+    state: present
+    update_cache: yes
+  when: ansible_facts['distribution'] == 'Ubuntu'
+
+- name: Disable swap (required for Kubernetes)
+  command: swapoff -a
+  ignore_errors: yes
+
+- name: Remove swap entry from fstab (permanent swapoff)
+  lineinfile:
+    path: /etc/fstab
+    state: absent
+    regexp: '^.*swap.*$'
+
+- name: Initialize Kubernetes master node
+  command: kubeadm init --pod-network-cidr=192.168.0.0/16
+  register: kubeadm_output
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Set up kubeconfig for ec2-user on master node
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/ec2-user/.kube/config
+    owner: ec2-user
+    mode: '0644'
+  become: yes
+  become_user: ec2-user
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Install network plugin (Flannel)
+  shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+  when: inventory_hostname in groups['k8s_master']
+
+- name: Join worker nodes to the cluster
+  command: kubeadm join --token {{ hostvars['master-node']['kubeadm_output'].stdout | regex_search('token\s(\S+)', '\\1') }} {{ hostvars['master-node']['ansible_host'] }}:6443 --discovery-token-ca-cert-hash sha256:{{ hostvars['master-node']['kubeadm_output'].stdout | regex_search('ca-cert-hash=(\S+)', '\\1') }}
+  when: inventory_hostname in groups['k8s_worker']
